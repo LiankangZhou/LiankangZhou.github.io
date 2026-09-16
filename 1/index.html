@@ -4,52 +4,1073 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CS280A Project 1: colorizing the Prokudin-Gorskii collection with image pyramids and automatic restoration.">
     <title>Project 1 | Liankang Zhou</title>
 
     <style>
+        :root {
+            --background: #f5f7fb;
+            --surface: #ffffff;
+            --surface-soft: #f8fafc;
+            --text: #182230;
+            --muted: #64748b;
+            --accent: #1d4ed8;
+            --accent-dark: #172554;
+            --gold: #f59e0b;
+            --border: #dce3ed;
+            --shadow: 0 18px 45px rgba(30, 41, 59, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
+            margin: 0;
+            color: var(--text);
+            background: var(--background);
             font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 50px auto;
-            padding: 0 20px;
-            line-height: 1.6;
+            line-height: 1.7;
+        }
+
+        main,
+        .site-header {
+            width: min(100% - 40px, 1120px);
+            margin: 0 auto;
+        }
+
+        .site-header {
+            padding: 30px 0 22px;
         }
 
         a {
-            text-decoration: none;
-            color: #0066cc;
+            color: var(--accent);
         }
 
-        img {
-            max-width: 100%;
+        .back-link,
+        nav a {
+            text-decoration: none;
+        }
+
+        .back-link:hover,
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 64px;
+            border-radius: 22px;
+            color: white;
+            background: linear-gradient(135deg, #0f172a 0%, #172554 48%, #1d4ed8 100%);
+            box-shadow: var(--shadow);
+        }
+
+        .hero::after {
+            position: absolute;
+            right: -90px;
+            bottom: -150px;
+            width: 420px;
+            height: 420px;
+            border: 70px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            content: "";
+        }
+
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .eyebrow {
+            margin: 0 0 10px;
+            font-size: 0.84rem;
+            font-weight: bold;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        h1 {
+            max-width: 820px;
+            margin: 0;
+            font-size: clamp(2.4rem, 6vw, 4.5rem);
+            line-height: 1.05;
+        }
+
+        .hero-subtitle {
+            max-width: 720px;
+            margin: 22px 0 8px;
+            font-size: 1.25rem;
+            opacity: 0.92;
+        }
+
+        .hero-meta {
+            margin: 0;
+            opacity: 0.72;
+        }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 22px;
+            margin: 28px 0;
+            padding: 18px 22px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--surface);
+        }
+
+        section {
+            scroll-margin-top: 24px;
+            margin: 28px 0;
+            padding: 36px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--surface);
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: clamp(1.65rem, 4vw, 2.25rem);
+            line-height: 1.2;
+        }
+
+        h3 {
+            margin: 28px 0 8px;
+            line-height: 1.3;
+        }
+
+        p:first-child,
+        h3:first-child {
+            margin-top: 0;
+        }
+
+        code {
+            padding: 0.12em 0.35em;
+            border-radius: 5px;
+            background: #eef2ff;
+            font-size: 0.92em;
+        }
+
+        .lead {
+            color: #334155;
+            font-size: 1.08rem;
+        }
+
+        .featured-image {
+            display: block;
+            width: 100%;
+            margin-top: 26px;
+            border-radius: 15px;
+        }
+
+        .pipeline {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin: 24px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .pipeline li {
+            padding: 16px 12px;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: 0.93rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1.8fr);
+            gap: 28px;
+            align-items: center;
+            margin-top: 24px;
+        }
+
+        .input-grid figure:first-child img {
+            width: min(100%, 270px);
+            margin: 0 auto;
+        }
+
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .parameter-card {
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface-soft);
+        }
+
+        .parameter-card strong {
+            display: block;
+            color: #1e3a8a;
+            font-size: 0.88rem;
+            letter-spacing: 0.02em;
+        }
+
+        .parameter-card span {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .method,
+        .analysis,
+        .note {
+            margin-top: 24px;
+            padding: 22px 24px;
+            border-radius: 12px;
+        }
+
+        .method {
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+        }
+
+        .analysis {
+            border-left: 4px solid var(--accent);
+            border-radius: 0 10px 10px 0;
+            background: #eff6ff;
+        }
+
+        .note {
+            border-left: 4px solid var(--gold);
+            border-radius: 0 10px 10px 0;
+            background: #fffbeb;
+        }
+
+        .method h3,
+        .analysis h3,
+        .note h3 {
+            margin-top: 0;
+        }
+
+        .equation {
+            display: flex;
+            min-height: 112px;
+            align-items: center;
+            justify-content: center;
+            overflow-x: auto;
+            margin: 18px 0;
+            padding: 24px 32px;
+            border: 1px solid rgba(147, 197, 253, 0.22);
+            border-radius: 12px;
+            color: white;
+            background: linear-gradient(135deg, #172554, #1e3a8a);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            text-align: center;
+        }
+
+        .equation math {
+            flex: 0 0 auto;
+            color: inherit;
+            font-family: "STIX Two Math", "Cambria Math", "Times New Roman", serif;
+            font-size: clamp(1.08rem, 2.2vw, 1.38rem);
+        }
+
+        .figure-grid,
+        .result-grid,
+        .custom-grid {
+            display: grid;
+            gap: 22px;
+            margin-top: 24px;
+        }
+
+        .figure-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .result-grid {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .custom-grid {
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        }
+
+        .custom-examples {
+            display: grid;
+            gap: 28px;
+            margin-top: 26px;
+        }
+
+        .custom-example {
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--surface-soft);
+        }
+
+        .custom-example h3 {
+            margin: 0 0 6px;
+        }
+
+        .custom-pair {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .custom-pair figure {
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            background: var(--surface);
+        }
+
+        .custom-pair img {
+            aspect-ratio: 1.14;
+            border-radius: 0;
+            background: #0f172a;
+            object-fit: contain;
+        }
+
+        .custom-pair figcaption {
+            margin: 0;
+            padding: 10px 13px 12px;
+        }
+
+        .custom-meta {
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 0.94rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        figure {
+            margin: 0;
+        }
+
+        figure a {
+            display: block;
+        }
+
+        figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        .result-card,
+        .custom-card {
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: var(--surface);
+            box-shadow: 0 8px 24px rgba(30, 41, 59, 0.06);
+        }
+
+        .result-card img {
+            aspect-ratio: 1.2;
+            border-radius: 0;
+            background: #0f172a;
+            object-fit: contain;
+        }
+
+        .custom-card img {
+            border-radius: 0;
+        }
+
+        .result-card figcaption,
+        .custom-card figcaption {
+            padding: 14px 16px 16px;
+        }
+
+        figcaption {
+            margin-top: 9px;
+            color: var(--muted);
+            font-size: 0.94rem;
+            line-height: 1.5;
+        }
+
+        figcaption strong {
+            display: block;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .wide-figure {
+            margin-top: 24px;
+        }
+
+        .wide-figure img {
+            border: 1px solid var(--border);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 24px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-variant-numeric: tabular-nums;
+        }
+
+        th,
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            color: #1e3a8a;
+            background: #eff6ff;
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .small {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        footer {
+            padding: 16px 0 52px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        @media (max-width: 820px) {
+            .hero,
+            section {
+                padding: 26px;
+            }
+
+            .pipeline {
+                grid-template-columns: 1fr;
+            }
+
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .custom-pair {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            main,
+            .site-header {
+                width: min(100% - 24px, 1120px);
+            }
+
+            .hero,
+            section {
+                padding: 21px;
+            }
         }
     </style>
 </head>
 
 <body>
+    <header class="site-header">
+        <a class="back-link" href="../index.html">← Back to Portfolio</a>
+    </header>
 
-    <a href="../index.html">← Back to Portfolio</a>
+    <main>
+        <header class="hero">
+            <p class="eyebrow">CS 180 / 280A · Fall 2026</p>
+            <h1>Images of the Russian Empire</h1>
+            <p class="hero-subtitle">Colorizing the Prokudin-Gorskii photo collection with coarse-to-fine alignment and automatic restoration.</p>
+            <p class="hero-meta">Project 1 · Liankang Zhou</p>
+        </header>
 
-    <h1>Project 1</h1>
+        <nav aria-label="Project sections">
+            <a href="#overview">Overview</a>
+            <a href="#single-scale">Single Scale</a>
+            <a href="#pyramid">Image Pyramid</a>
+            <a href="#features">Better Features</a>
+            <a href="#restoration">Automatic Restoration</a>
+            <a href="#custom">LoC Images</a>
+            <a href="#discussion">Discussion</a>
+        </nav>
 
-    <h2>Overview</h2>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p class="lead">
+                Sergei Prokudin-Gorskii recorded each scene three times through blue, green, and red filters. The digitized glass plate stores these exposures vertically in B-G-R order. My goal is to separate the plate, align the green and red exposures to blue, and reconstruct one RGB photograph with as few visible artifacts as possible.
+            </p>
+            <p>
+                I first implemented exhaustive single-scale alignment with an L2 score. For large TIFF scans, I developed a coarse-to-fine image pyramid. I then extended the pipeline for CS280A with gradient-based alignment, automatic border detection, robust contrast stretching, Gray-Pixel white balance, and a fixed linear color mapping. The same parameters are used across the entire dataset and three additional Library of Congress scans.
+            </p>
 
-    <p>
-        This page contains my work for Project 1.
-    </p>
+            <h3>From One Glass Plate to Three Channels</h3>
+            <p>
+                Each source file contains three monochrome exposures of the same scene. I first trim the height to a multiple of three, split the plate into equal blue, green, and red sections, and convert both 8-bit JPEG and 16-bit TIFF inputs to floating point in <code>[0, 1]</code>. Although the three exposures record different spectral responses, their edges and large-scale geometry should coincide after translation.
+            </p>
 
-    <h2>Approach</h2>
+            <div class="input-grid">
+                <figure>
+                    <a href="./images/stacked-plate.jpg" target="_blank" rel="noopener">
+                        <img src="./images/stacked-plate.jpg" width="254" height="636" alt="Original vertically stacked blue, green, and red glass plate" loading="lazy">
+                    </a>
+                    <figcaption>The digitized plate stores the blue, green, and red exposures from top to bottom.</figcaption>
+                </figure>
+                <figure>
+                    <a href="./images/split-channels.jpg" target="_blank" rel="noopener">
+                        <img src="./images/split-channels.jpg" width="950" height="281" alt="Blue, green, and red exposures after splitting the glass plate" loading="lazy">
+                    </a>
+                    <figcaption>After splitting, green and red are translated to match the fixed blue reference.</figcaption>
+                </figure>
+            </div>
 
-    <p>
-        My implementation and methodology will be described here.
-    </p>
+            <ol class="pipeline" aria-label="Final processing pipeline">
+                <li>Gradient alignment</li>
+                <li>Automatic crop</li>
+                <li>Gray-Pixel balance</li>
+                <li>Color mapping</li>
+                <li>Robust contrast</li>
+            </ol>
 
-    <h2>Results</h2>
+            <img class="featured-image" src="./images/church-final.jpg" width="1500" height="1351" alt="Final restored color image of the church" fetchpriority="high">
+        </section>
 
-    <p>
-        Results will be added here.
-    </p>
+        <section id="single-scale">
+            <h2>1. Single-Scale Alignment</h2>
+            <p>
+                I split each plate into three equal-height grayscale arrays. Blue remains fixed while I search every integer displacement <code>(dy, dx)</code> in a <code>[-15, 15]</code> window for green and red. Candidate channels are shifted with <code>np.roll</code> and scored using mean squared L2 error.
+            </p>
 
+            <div class="method">
+                <h3>Coordinate Convention</h3>
+                <p>
+                    Image arrays are indexed as <code>(row, column)</code>, so <code>dy</code> acts on axis 0 and <code>dx</code> on axis 1. A positive <code>dy</code> moves a channel downward; a positive <code>dx</code> moves it to the right. Every reported displacement is the shift applied to green or red to align it with blue.
+                </p>
+            </div>
+
+            <div class="equation" aria-label="Mean squared L2 alignment error">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <msub><mi>E</mi><mn>2</mn></msub>
+                        <mo>(</mo><mi>Δy</mi><mo>,</mo><mi>Δx</mi><mo>)</mo>
+                        <mo>=</mo>
+                        <mfrac>
+                            <mn>1</mn>
+                            <mrow><mo>|</mo><mi>Ω</mi><mo>|</mo></mrow>
+                        </mfrac>
+                        <munder>
+                            <mo>∑</mo>
+                            <mrow><mo>(</mo><mi>y</mi><mo>,</mo><mi>x</mi><mo>)</mo><mo>∈</mo><mi>Ω</mi></mrow>
+                        </munder>
+                        <msup>
+                            <mrow>
+                                <mo>[</mo>
+                                <msub><mi>I</mi><mi>B</mi></msub><mo>(</mo><mi>y</mi><mo>,</mo><mi>x</mi><mo>)</mo>
+                                <mo>−</mo>
+                                <msub><mi>I</mi><mi>C</mi></msub>
+                                <mo>(</mo><mi>y</mi><mo>−</mo><mi>Δy</mi><mo>,</mo><mi>x</mi><mo>−</mo><mi>Δx</mi><mo>)</mo>
+                                <mo>]</mo>
+                            </mrow>
+                            <mn>2</mn>
+                        </msup>
+                    </mstyle>
+                </math>
+            </div>
+
+            <p>
+                I compute the score only on the interior after removing 20% from each side. This prevents the plate borders and wrapped pixels introduced by <code>np.roll</code> from dominating the metric. The three low-resolution JPEGs align correctly with this direct search.
+            </p>
+
+            <div class="figure-grid">
+                <figure>
+                    <a href="./images/single-scale-cathedral.jpg" target="_blank" rel="noopener">
+                        <img src="./images/single-scale-cathedral.jpg" width="989" height="480" alt="Cathedral before and after single-scale alignment" loading="lazy">
+                    </a>
+                    <figcaption><strong>Cathedral</strong>G = (5, 2), R = (12, 3)</figcaption>
+                </figure>
+
+                <figure>
+                    <a href="./images/single-scale-monastery.jpg" target="_blank" rel="noopener">
+                        <img src="./images/single-scale-monastery.jpg" width="989" height="479" alt="Monastery before and after single-scale alignment" loading="lazy">
+                    </a>
+                    <figcaption><strong>Monastery</strong>G = (-3, 2), R = (3, 2)</figcaption>
+                </figure>
+
+                <figure>
+                    <a href="./images/single-scale-tobolsk.jpg" target="_blank" rel="noopener">
+                        <img src="./images/single-scale-tobolsk.jpg" width="989" height="474" alt="Tobolsk before and after single-scale alignment" loading="lazy">
+                    </a>
+                    <figcaption><strong>Tobolsk</strong>G = (3, 3), R = (7, 3)</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section id="pyramid">
+            <h2>2. Multi-Scale Pyramid Alignment</h2>
+            <p>
+                A ±15 pixel window is too small for full-resolution TIFF images, while a much larger exhaustive search is unnecessarily expensive. I therefore construct each pyramid myself by repeatedly downsampling by 0.5 with anti-aliasing until the smallest dimension would fall below 128 pixels.
+            </p>
+
+            <div class="method">
+                <h3>Coarse-to-Fine Search</h3>
+                <ol>
+                    <li>At the coarsest level, search ±15 pixels around zero.</li>
+                    <li>Move to the next finer level and multiply the current shift by two.</li>
+                    <li>Shift the moving image by this prediction and search a ±3 pixel correction.</li>
+                    <li>Repeat until the original resolution is reached.</li>
+                </ol>
+                <p>
+                    This converts one large two-dimensional search into a small global search followed by inexpensive local refinements. The baseline L2 pyramid processed all 14 provided images in 15.70 seconds on my machine.
+                </p>
+            </div>
+
+            <div class="equation" aria-label="Coarse-to-fine shift propagation">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <msub><mi>s</mi><mrow><mi>l</mi><mo>+</mo><mn>1</mn></mrow></msub>
+                        <mo>=</mo>
+                        <mn>2</mn><msub><mi>s</mi><mi>l</mi></msub>
+                        <mo>+</mo>
+                        <msub><mi>δ</mi><mrow><mi>l</mi><mo>+</mo><mn>1</mn></mrow></msub>
+                    </mstyle>
+                </math>
+            </div>
+
+            <p>
+                Here <code>s</code> is the accumulated displacement and <code>δ</code> is the small correction found at the next finer level. For Church, the pyramid progresses through 200×227, 400×454, 800×908, 1601×1817, and 3202×3634 pixels. Anti-aliasing before every reduction prevents high-frequency structure from folding into misleading coarse patterns.
+            </p>
+
+            <div class="parameter-grid" aria-label="Pyramid alignment parameters">
+                <div class="parameter-card"><strong>Scale factor</strong><span>0.5</span></div>
+                <div class="parameter-card"><strong>Minimum dimension</strong><span>128 px</span></div>
+                <div class="parameter-card"><strong>Coarsest search</strong><span>±15 px</span></div>
+                <div class="parameter-card"><strong>Fine correction</strong><span>±3 px</span></div>
+                <div class="parameter-card"><strong>Scoring crop</strong><span>20% per side</span></div>
+            </div>
+
+            <h3>Computed Offsets</h3>
+            <p class="small">All offsets are reported as <code>(dy, dx)</code> and align the indicated channel to blue. “Gradient” is the improved CS280A version described in the next section.</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>L2 Pyramid G</th>
+                            <th>L2 Pyramid R</th>
+                            <th>Gradient G</th>
+                            <th>Gradient R</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Cathedral</td><td>(5, 2)</td><td>(12, 3)</td><td>(5, 2)</td><td>(12, 3)</td></tr>
+                        <tr><td>Church</td><td>(25, 4)</td><td>(58, -4)</td><td>(25, 4)</td><td>(58, -4)</td></tr>
+                        <tr><td>Emir</td><td>(49, 24)</td><td>(61, 43)</td><td>(49, 24)</td><td>(107, 40)</td></tr>
+                        <tr><td>Harvesters</td><td>(59, 17)</td><td>(123, 14)</td><td>(60, 18)</td><td>(123, 14)</td></tr>
+                        <tr><td>Icon</td><td>(41, 17)</td><td>(89, 23)</td><td>(41, 17)</td><td>(90, 23)</td></tr>
+                        <tr><td>Ilemselga</td><td>(40, 7)</td><td>(131, 11)</td><td>(40, 7)</td><td>(131, 11)</td></tr>
+                        <tr><td>Melons</td><td>(81, 10)</td><td>(178, 14)</td><td>(80, 10)</td><td>(177, 14)</td></tr>
+                        <tr><td>Monastery</td><td>(-3, 2)</td><td>(3, 2)</td><td>(-3, 2)</td><td>(3, 2)</td></tr>
+                        <tr><td>Religious Painting</td><td>(29, 3)</td><td>(69, 7)</td><td>(30, 1)</td><td>(70, 6)</td></tr>
+                        <tr><td>Self Portrait</td><td>(78, 29)</td><td>(176, 37)</td><td>(78, 29)</td><td>(175, 37)</td></tr>
+                        <tr><td>Siren</td><td>(50, -5)</td><td>(97, -24)</td><td>(49, -6)</td><td>(96, -24)</td></tr>
+                        <tr><td>Three Generations</td><td>(52, 14)</td><td>(111, 12)</td><td>(53, 13)</td><td>(111, 9)</td></tr>
+                        <tr><td>Tobolsk</td><td>(3, 3)</td><td>(7, 3)</td><td>(3, 3)</td><td>(7, 3)</td></tr>
+                        <tr><td>Wharf</td><td>(15, -7)</td><td>(82, -16)</td><td>(15, -6)</td><td>(82, -16)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Baseline Pyramid Results</h3>
+            <div class="result-grid">
+                <figure class="result-card"><img src="./images/pyramid/cathedral.jpg" alt="Pyramid alignment result for Cathedral" loading="lazy"><figcaption><strong>Cathedral</strong>G (5, 2) · R (12, 3)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/church.jpg" alt="Pyramid alignment result for Church" loading="lazy"><figcaption><strong>Church</strong>G (25, 4) · R (58, -4)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/emir.jpg" alt="Raw-pixel pyramid alignment result for Emir" loading="lazy"><figcaption><strong>Emir</strong>Raw L2 fails on the red channel.</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/harvesters.jpg" alt="Pyramid alignment result for Harvesters" loading="lazy"><figcaption><strong>Harvesters</strong>G (59, 17) · R (123, 14)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/icon.jpg" alt="Pyramid alignment result for Icon" loading="lazy"><figcaption><strong>Icon</strong>G (41, 17) · R (89, 23)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/ilemselga.jpg" alt="Pyramid alignment result for Ilemselga" loading="lazy"><figcaption><strong>Ilemselga</strong>G (40, 7) · R (131, 11)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/melons.jpg" alt="Pyramid alignment result for Melons" loading="lazy"><figcaption><strong>Melons</strong>G (81, 10) · R (178, 14)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/monastery.jpg" alt="Pyramid alignment result for Monastery" loading="lazy"><figcaption><strong>Monastery</strong>G (-3, 2) · R (3, 2)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/religous_painting.jpg" alt="Pyramid alignment result for Religious Painting" loading="lazy"><figcaption><strong>Religious Painting</strong>G (29, 3) · R (69, 7)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/self_portrait.jpg" alt="Pyramid alignment result for Self Portrait" loading="lazy"><figcaption><strong>Self Portrait</strong>G (78, 29) · R (176, 37)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/siren.jpg" alt="Pyramid alignment result for Siren" loading="lazy"><figcaption><strong>Siren</strong>G (50, -5) · R (97, -24)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/three_generations.jpg" alt="Pyramid alignment result for Three Generations" loading="lazy"><figcaption><strong>Three Generations</strong>G (52, 14) · R (111, 12)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/tobolsk.jpg" alt="Pyramid alignment result for Tobolsk" loading="lazy"><figcaption><strong>Tobolsk</strong>G (3, 3) · R (7, 3)</figcaption></figure>
+                <figure class="result-card"><img src="./images/pyramid/wharf.jpg" alt="Pyramid alignment result for Wharf" loading="lazy"><figcaption><strong>Wharf</strong>G (15, -7) · R (82, -16)</figcaption></figure>
+            </div>
+        </section>
+
+        <section id="features">
+            <h2>3. Better Features: Gradient Alignment</h2>
+            <p>
+                Raw intensity assumes that corresponding pixels have similar values. That assumption breaks for objects whose reflectance differs strongly across the historical filters. In <em>Emir</em>, the blue robe is represented very differently in the red and blue exposures, so raw L2 chooses an incorrect red shift.
+            </p>
+            <p>
+                I instead compute the gradient magnitude of every exposure and run the same pyramid search on these structural features:
+            </p>
+
+            <div class="equation" aria-label="Gradient magnitude">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <mo fence="true" stretchy="false">‖</mo><mo>∇</mo><mi>I</mi><mo fence="true" stretchy="false">‖</mo>
+                        <mo>=</mo>
+                        <msqrt>
+                            <mrow>
+                                <msup>
+                                    <mrow>
+                                        <mo>(</mo>
+                                        <mfrac><mrow><mo>∂</mo><mi>I</mi></mrow><mrow><mo>∂</mo><mi>x</mi></mrow></mfrac>
+                                        <mo>)</mo>
+                                    </mrow>
+                                    <mn>2</mn>
+                                </msup>
+                                <mo>+</mo>
+                                <msup>
+                                    <mrow>
+                                        <mo>(</mo>
+                                        <mfrac><mrow><mo>∂</mo><mi>I</mi></mrow><mrow><mo>∂</mo><mi>y</mi></mrow></mfrac>
+                                        <mo>)</mo>
+                                    </mrow>
+                                    <mn>2</mn>
+                                </msup>
+                            </mrow>
+                        </msqrt>
+                    </mstyle>
+                </math>
+            </div>
+
+            <p>
+                Edges describe where structures change rather than their absolute brightness. The shift is estimated from the gradient images, but the final RGB image is constructed from the original intensities. For Emir, the red-to-blue estimate changes from <code>(61, 43)</code> to <code>(107, 40)</code>, visibly aligning the face, robe, and architectural edges.
+            </p>
+
+            <div class="analysis">
+                <h3>Interpreting the Two Derivatives</h3>
+                <p>
+                    The x derivative measures change while moving across columns, so it responds strongly to vertical edges. The y derivative measures change while moving across rows, so it responds strongly to horizontal edges. Their magnitude combines both directions without favoring a particular edge orientation.
+                </p>
+            </div>
+
+            <figure class="wide-figure">
+                <a href="./images/emir-gradient-comparison.jpg" target="_blank" rel="noopener">
+                    <img src="./images/emir-gradient-comparison.jpg" width="1400" height="442" alt="Unaligned Emir, raw-pixel L2 result, and gradient-feature L2 result" loading="lazy">
+                </a>
+                <figcaption>Emir comparison: unaligned input, raw-pixel L2, and gradient-feature L2.</figcaption>
+            </figure>
+        </section>
+
+        <section id="restoration">
+            <h2>4. Automatic Restoration</h2>
+            <p>
+                After alignment, I apply four automatic corrections. Every method uses one fixed parameter set for all provided and custom images; there is no image-specific tuning.
+            </p>
+
+            <h3>Automatic Cropping</h3>
+            <p>
+                I compute horizontal and vertical RGB gradients and reduce them to one-dimensional row and column edge-strength profiles. A moving average with a window equal to 0.2% of the profile length suppresses isolated noise. The adaptive threshold is <code>median + 3 × 1.4826 × MAD</code>. I search only the outer 10% of each side and crop at the detected border edge, rather than removing a fixed margin.
+            </p>
+
+            <div class="method">
+                <h3>Border Detection Procedure</h3>
+                <ol>
+                    <li>Compute directional gradients independently in R, G, and B, then retain the strongest channel response at each location.</li>
+                    <li>Average gradient magnitude across each row and column to form one-dimensional edge profiles.</li>
+                    <li>Smooth each profile with a proportional moving-average window and calculate a robust MAD threshold.</li>
+                    <li>Within the outer 10%, choose the last threshold crossing from the top or left and the first crossing from the bottom or right.</li>
+                </ol>
+            </div>
+
+            <div class="analysis">
+                <h3>From Grayscale Gradients to RGB Gradients</h3>
+                <p>
+                    My first version converted the aligned image to grayscale before calculating the gradients. This worked for black and white borders, but it could miss a colored border when two very different RGB colors happened to have similar grayscale intensity. In that case, the color changes strongly while the grayscale value changes only a little.
+                </p>
+                <p>
+                    I therefore kept the same row-profile and column-profile method, but computed the gradients separately in red, green, and blue. At each pixel I use the largest absolute channel response. This preserves color-specific edges and makes cyan, magenta, or green plate borders easier to detect.
+                </p>
+                <p>
+                    Batch testing also changed two global parameters. The first version searched the outer 20% and used a threshold scale of 4.0; this sometimes included strong scene structures and also missed thin borders. The final version searches only the outer 10% and uses a threshold scale of 3.0.
+                </p>
+            </div>
+
+            <div class="equation" aria-label="Strongest RGB directional gradient">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <msub><mi>g</mi><mi>x</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo>
+                        <mo>=</mo>
+                        <munder><mi>max</mi><mrow><mi>c</mi><mo>∈</mo><mo>{</mo><mi>R</mi><mo>,</mo><mi>G</mi><mo>,</mo><mi>B</mi><mo>}</mo></mrow></munder>
+                        <mo>|</mo>
+                        <mfrac><mrow><mo>∂</mo><msub><mi>I</mi><mi>c</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo></mrow><mrow><mo>∂</mo><mi>x</mi></mrow></mfrac>
+                        <mo>|</mo>
+                        <mo>,</mo>
+                        <mspace width="1.2em"></mspace>
+                        <msub><mi>g</mi><mi>y</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo>
+                        <mo>=</mo>
+                        <munder><mi>max</mi><mrow><mi>c</mi><mo>∈</mo><mo>{</mo><mi>R</mi><mo>,</mo><mi>G</mi><mo>,</mo><mi>B</mi><mo>}</mo></mrow></munder>
+                        <mo>|</mo>
+                        <mfrac><mrow><mo>∂</mo><msub><mi>I</mi><mi>c</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo></mrow><mrow><mo>∂</mo><mi>y</mi></mrow></mfrac>
+                        <mo>|</mo>
+                    </mstyle>
+                </math>
+            </div>
+
+            <figure class="wide-figure">
+                <a href="./images/automatic-crop-church.jpg" target="_blank" rel="noopener">
+                    <img src="./images/automatic-crop-church.jpg" width="1389" height="652" alt="Church before and after automatic border cropping" loading="lazy">
+                </a>
+                <figcaption>Church before and after data-driven border detection. Detected bounds: (94, 3061, 115, 3409).</figcaption>
+            </figure>
+
+            <h3>Automatic Contrast</h3>
+            <p>
+                Direct min-max stretching is unstable because dust, scratches, and saturated plate pixels can become the extrema. I use the global 1st and 99th percentiles instead. Values below the lower percentile map to 0, values above the upper percentile map to 1, and the middle range is stretched linearly. This improves separation while limiting the influence of outliers.
+            </p>
+
+            <div class="equation" aria-label="Percentile contrast transformation">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <msub><mi>I</mi><mrow><mi>out</mi></mrow></msub>
+                        <mo>=</mo>
+                        <mi>clip</mi><mo>(</mo>
+                        <mfrac>
+                            <mrow><mi>I</mi><mo>−</mo><msub><mi>I</mi><mi>low</mi></msub></mrow>
+                            <mrow><msub><mi>I</mi><mi>high</mi></msub><mo>−</mo><msub><mi>I</mi><mi>low</mi></msub></mrow>
+                        </mfrac>
+                        <mo>,</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo>)</mo>
+                    </mstyle>
+                </math>
+            </div>
+
+            <p>
+                The two percentiles are measured over the complete RGB image and the same endpoints are applied to every channel, so contrast changes without independently rebalancing color. Because many quantized pixels can share an endpoint, the measured clipped fraction can be slightly larger than exactly 1%.
+            </p>
+
+            <figure class="wide-figure">
+                <a href="./images/automatic-contrast-church.jpg" target="_blank" rel="noopener">
+                    <img src="./images/automatic-contrast-church.jpg" width="1389" height="652" alt="Church before and after percentile contrast stretching" loading="lazy">
+                </a>
+                <figcaption>Church contrast stretch using the measured range 0.183–0.930.</figcaption>
+            </figure>
+
+            <h3>Automatic White Balance</h3>
+            <p>
+                Standard Gray World forces the global channel means toward a common value, but large colored objects can bias that estimate. This is especially visible when purple flowers dominate <em>Siren</em>. My final method uses Gray-Pixel white balance: it removes the darkest and brightest 10%, computes normalized chroma, and estimates the illuminant from the 20% least colorful remaining pixels. Approximately 16% of all pixels contribute to the estimate. The gains are normalized so the largest is 1, preventing newly saturated highlights.
+            </p>
+
+            <div class="equation" aria-label="Normalized chroma used for gray-pixel selection">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <mi>χ</mi><mo>(</mo><mi>p</mi><mo>)</mo>
+                        <mo>=</mo>
+                        <mfrac>
+                            <mrow>
+                                <munder><mi>max</mi><mi>c</mi></munder><msub><mi>I</mi><mi>c</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo>
+                                <mo>−</mo>
+                                <munder><mi>min</mi><mi>c</mi></munder><msub><mi>I</mi><mi>c</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo>
+                            </mrow>
+                            <mrow>
+                                <munder><mi>mean</mi><mi>c</mi></munder><msub><mi>I</mi><mi>c</mi></msub><mo>(</mo><mi>p</mi><mo>)</mo>
+                                <mo>+</mo><mi>ε</mi>
+                            </mrow>
+                        </mfrac>
+                    </mstyle>
+                </math>
+            </div>
+
+            <p>
+                This comparison matters in scenes that violate Gray World's global-average assumption. For example, standard Gray World clipped roughly 19% of blue values in Harvesters and 12% of red values in Tobolsk, while the normalized Gray-Pixel gains introduced no additional clipping in the tested comparison.
+            </p>
+
+            <figure class="wide-figure">
+                <a href="./images/white-balance-comparison.jpg" target="_blank" rel="noopener">
+                    <img src="./images/white-balance-comparison.jpg" width="1400" height="630" alt="Original images, selected gray pixels, Gray World, and Gray-Pixel white balance" loading="lazy">
+                </a>
+                <figcaption>Gray-Pixel selection is more conservative than standard Gray World on Church and Siren.</figcaption>
+            </figure>
+
+            <h3>Better Color Mapping</h3>
+            <p>
+                The historical filters are not guaranteed to match modern display primaries. Without a calibration target, I cannot recover a physically exact camera response. I use a fixed neutral-preserving linear transform that mildly increases the component away from the gray axis:
+            </p>
+
+            <div class="equation" aria-label="Neutral-preserving linear color mapping">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <mi>M</mi><mo>=</mo><mi>J</mi><mo>+</mo><mi>s</mi><mo>(</mo><mi>I</mi><mo>−</mo><mi>J</mi><mo>)</mo>
+                        <mo>,</mo>
+                        <mspace width="1.4em"></mspace>
+                        <mi>s</mi><mo>=</mo><mn>1.1</mn>
+                        <mo>,</mo>
+                        <mspace width="1.4em"></mspace>
+                        <msub><mi>J</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub>
+                        <mo>=</mo>
+                        <mfrac><mn>1</mn><mn>3</mn></mfrac>
+                    </mstyle>
+                </math>
+            </div>
+
+            <div class="equation" aria-label="Selected color mapping matrix">
+                <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <mstyle displaystyle="true" scriptlevel="0">
+                        <mi>M</mi><mo>=</mo>
+                        <mrow>
+                            <mo fence="true" stretchy="true">[</mo>
+                            <mtable columnspacing="1.2em" rowspacing="0.55em">
+                                <mtr><mtd><mn>1.0667</mn></mtd><mtd><mo>−</mo><mn>0.0333</mn></mtd><mtd><mo>−</mo><mn>0.0333</mn></mtd></mtr>
+                                <mtr><mtd><mo>−</mo><mn>0.0333</mn></mtd><mtd><mn>1.0667</mn></mtd><mtd><mo>−</mo><mn>0.0333</mn></mtd></mtr>
+                                <mtr><mtd><mo>−</mo><mn>0.0333</mn></mtd><mtd><mo>−</mo><mn>0.0333</mn></mtd><mtd><mn>1.0667</mn></mtd></mtr>
+                            </mtable>
+                            <mo fence="true" stretchy="true">]</mo>
+                        </mrow>
+                    </mstyle>
+                </math>
+            </div>
+
+            <p>
+                Each row of the matrix sums to one, so neutral grays remain neutral. I compared strengths from 1.0 to 1.3 and selected 1.1 as a conservative setting that improves separation without making skin, foliage, or flowers look excessively saturated.
+            </p>
+
+            <figure class="wide-figure">
+                <a href="./images/color-mapping-comparison.jpg" target="_blank" rel="noopener">
+                    <img src="./images/color-mapping-comparison.jpg" width="1400" height="1399" alt="Comparison of four color mapping strengths on four images" loading="lazy">
+                </a>
+                <figcaption>Comparison of color strengths 1.0, 1.1, 1.2, and 1.3 on representative scenes.</figcaption>
+            </figure>
+
+            <h3>Putting the Steps Together</h3>
+            <p>
+                After testing each method separately, I put them into one function. For each plate, I first use gradient features to align the three exposures. I then crop the borders before calculating any color statistics, apply Gray-Pixel white balance, use the color mapping matrix, and finish with percentile contrast.
+            </p>
+            <p>
+                I use this order because the dark and colored plate borders should not affect white balance. Contrast is kept until the end so it stretches the range of the image after the color corrections are complete. Using the same function on all 14 provided images took 34.28 seconds in total, with an average of 2.45 seconds per image.
+            </p>
+
+            <h3>Fixed Parameters</h3>
+            <p>
+                These values are fixed globally rather than tuned per photograph, making the experiment reproducible and providing a direct test of generalization.
+            </p>
+
+            <div class="parameter-grid" aria-label="Automatic restoration parameters">
+                <div class="parameter-card"><strong>Crop smoothing</strong><span>0.2% of profile</span></div>
+                <div class="parameter-card"><strong>Crop threshold</strong><span>median + 3σ<sub>MAD</sub></span></div>
+                <div class="parameter-card"><strong>Border search</strong><span>outer 10%</span></div>
+                <div class="parameter-card"><strong>Contrast range</strong><span>1st–99th percentile</span></div>
+                <div class="parameter-card"><strong>Brightness filter</strong><span>10th–90th percentile</span></div>
+                <div class="parameter-card"><strong>Gray pixels</strong><span>least-chromatic 20%</span></div>
+                <div class="parameter-card"><strong>Color strength</strong><span>1.1</span></div>
+            </div>
+
+            <figure class="wide-figure">
+                <a href="./images/complete-pipeline-church.jpg" target="_blank" rel="noopener">
+                    <img src="./images/complete-pipeline-church.jpg" width="1400" height="306" alt="Five stages of the complete processing pipeline on Church" loading="lazy">
+                </a>
+                <figcaption>The five stages of the final pipeline on Church.</figcaption>
+            </figure>
+        </section>
+
+        <section id="custom">
+            <h2>5. Additional Library of Congress Images</h2>
+            <p>
+                To test generalization, I downloaded three full-resolution 16-bit TIFF glass plates from the <a href="https://www.loc.gov/pictures/collection/prok/" target="_blank" rel="noopener">Library of Congress Prokudin-Gorskii collection</a>. I applied the same gradient-feature L2 pyramid and the exact same restoration parameters used for the provided dataset. The three results align correctly despite differences in subject matter, exposure, and plate dimensions.
+            </p>
+
+            <div class="custom-examples">
+                <article class="custom-example">
+                    <h3>Architectural Ruin · LoC 00100-00110a</h3>
+                    <p>
+                        The unaligned reconstruction has clear color ghosts around the dome and doorway. After alignment, the large vertical red displacement is corrected and the main architectural edges overlap cleanly.
+                    </p>
+                    <p class="custom-meta">G shift: (26, 10) · R shift: (70, 11) · Crop bounds: (211, 3154, 158, 3507) · Runtime: 2.88 s</p>
+                    <div class="custom-pair">
+                        <figure>
+                            <img src="./images/custom/master-pnp-prok-00100-00110a-unaligned.jpg" alt="Unaligned RGB reconstruction of the architectural ruin" loading="lazy">
+                            <figcaption><strong>Before</strong>Channels stacked without alignment or restoration.</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="./images/custom/master-pnp-prok-00100-00110a.jpg" width="1200" height="1055" alt="Final colorized Library of Congress image of an architectural ruin" loading="lazy">
+                            <figcaption><strong>After</strong>Final result from the fixed processing pipeline.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="custom-example">
+                    <h3>Woman on a Terrace · LoC 00100-00194a</h3>
+                    <p>
+                        This image contains many thin and repeated structures in the railing. The gradient representation still finds a stable shift, and the final image aligns the face, chair, tablecloth, and railing without changing the parameters.
+                    </p>
+                    <p class="custom-meta">G shift: (38, 22) · R shift: (77, 36) · Crop bounds: (235, 3206, 186, 3581) · Runtime: 2.96 s</p>
+                    <div class="custom-pair">
+                        <figure>
+                            <img src="./images/custom/master-pnp-prok-00100-00194a-unaligned.jpg" alt="Unaligned RGB reconstruction of a woman seated on a terrace" loading="lazy">
+                            <figcaption><strong>Before</strong>Channels stacked without alignment or restoration.</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="./images/custom/master-pnp-prok-00100-00194a.jpg" width="1200" height="1050" alt="Final colorized Library of Congress portrait of a woman seated on a terrace" loading="lazy">
+                            <figcaption><strong>After</strong>Final result from the fixed processing pipeline.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="custom-example">
+                    <h3>Italian Townscape · LoC 00200-00218a</h3>
+                    <p>
+                        Unlike the first two examples, both horizontal offsets are negative. The same search handles that direction automatically and brings the tower, balconies, and building outlines into agreement.
+                    </p>
+                    <p class="custom-meta">G shift: (32, -16) · R shift: (78, -25) · Crop bounds: (100, 3238, 205, 3606) · Runtime: 3.19 s</p>
+                    <div class="custom-pair">
+                        <figure>
+                            <img src="./images/custom/master-pnp-prok-00200-00218a-unaligned.jpg" alt="Unaligned RGB reconstruction of an Italian townscape" loading="lazy">
+                            <figcaption><strong>Before</strong>Channels stacked without alignment or restoration.</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="./images/custom/master-pnp-prok-00200-00218a.jpg" width="1200" height="1107" alt="Final colorized Library of Congress image of an Italian town" loading="lazy">
+                            <figcaption><strong>After</strong>Final result from the fixed processing pipeline.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section id="discussion">
+            <h2>Discussion</h2>
+            <h3>What I Found</h3>
+            <p>
+                The image pyramid solved the speed problem for the large TIFF files, but it did not solve every alignment problem by itself. Emir was the clearest example: increasing the search range still gave a wrong red-channel match because the robe has very different intensities across the filters. Changing the input to gradient magnitude fixed that result without changing the pyramid search.
+            </p>
+            <p>
+                The automatic corrections also needed a few revisions. In cropping, a wide search region could confuse image content with a plate border, so I reduced the search to the outer 10%. For white balance, the global Gray World result changed scenes with one dominant color too strongly, so I estimated the gains from low-chroma pixels instead.
+            </p>
+
+            <h3>Limitations</h3>
+            <p>
+                My alignment model only searches for x and y translation. It cannot correct rotation, scale change, or movement between the three exposures. The cropper is intentionally conservative, so a thin colored edge can remain when removing it would risk cutting real image content. The color mapping is also a visual adjustment rather than a physical calibration because these plates do not contain a known color chart.
+            </p>
+
+            <h3>Takeaway</h3>
+            <p>
+                The most useful change was not a larger search window. It was using a feature that describes the shared structure of the three exposures. The same idea helped in the later parts: I used edge profiles for borders, robust percentiles for contrast, and low-chroma pixels for white balance instead of relying on a single extreme value.
+            </p>
+        </section>
+
+        <footer>
+            <p>CS 180 / 280A Project 1 · Liankang Zhou · Fall 2026</p>
+        </footer>
+    </main>
 </body>
 
 </html>
